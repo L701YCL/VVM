@@ -13,10 +13,9 @@
 export EXPHDR_tmp='expname ../../DATA/expname'
 
 source /pkg/local/Modules/3.2.10/init/sh
-module load compiler/intel/2015
-module load mpi/intel/2015/openmpi/1.8.4
+module load mpi/intel/2016/openmpi/1.6.5
 module load netcdf/4.4.0/intel-2015_hdf5-1.8.16
-module load hdf5/1.8.16/intel-2015
+module load hdf5/1.8.16/intel-2016
 
 export LD_LIBRARY_PATH=/home/j40mog00/petsc360/lib:$LD_LIBRARY_PATH
 
@@ -24,7 +23,7 @@ date > runtime
 
 ldd ./vvm |grep found
 
-mpirun.lsf -np $LSB_DJOB_NUMPROC /work/j40mog00/VVM/DATA/expname/vvm < INPUT | tee /work/j40mog00/VVM/DATA/expname/OUTPUT
+mpirun.lsf -np $LSB_DJOB_NUMPROC /project/j40bjt00/VVM/DATA/expname/vvm < INPUT | tee /project/j40bjt00/VVM/DATA/expname/OUTPUT
 
 date >> runtime
 

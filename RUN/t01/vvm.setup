@@ -5,7 +5,7 @@
 #--------------------------------------------------------------------- 
 
 set echo  # echoes the commands
-set expname = puli_sub_partial5
+set expname = bjt_0721
 
 source /pkg/local/Modules/3.2.10/init/csh
 module load compiler/intel/2016

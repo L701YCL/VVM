@@ -13,15 +13,17 @@
 # Example: make INTEL=true DEBUG=true
 
 set echo  # echoes the commands
-set expname = puli_sub_partial5
+set expname = bjt_0721
 set subdir = ../../DATA/${expname}
 set datadir = ../../RUNDATA
 set codedir = CODE
 
 source /pkg/local/Modules/3.2.10/init/csh
+moudle purge
 module load mpi/intel/2016/openmpi/1.6.5
 module load netcdf/4.4.0/intel-2016_hdf5-1.8.16
 module load hdf5/1.8.16/intel-2016 
+module list
 
 make INTEL_COMP=true CASENAME=${expname} CODEDIR=${codedir} -f ../makefile
 

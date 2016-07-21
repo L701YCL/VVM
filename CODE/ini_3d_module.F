@@ -1,6 +1,8 @@
 #include "definesld.com"
+
 MODULE ini_3d_module
 
+USE netcdf
 USE kinds
 USE PARMSLD
 USE CONSTLD
@@ -20,7 +22,7 @@ USE rrtm_vars, only: sstxy,albdo
 #endif 
 USE petscsys
 
-IMPLICIT NONE
+!IMPLICIT NONE
 PRIVATE
 
 ! public member functions
@@ -33,7 +35,6 @@ CONTAINS
 !=======================================================================
    SUBROUTINE INI_3D (itt)
 !=======================================================================
-
 !     Set up I.C. 
 
       integer (kind=int_kind), intent(in) :: itt
@@ -60,82 +61,68 @@ CONTAINS
 
       integer nu1, nt1, k1, k2, it
       logical lf
-      DATA NU1/10000/,NT1/10000/
+      DATA NU1/16/,NT1/16/
       REAL(kind=dbl_kind) :: rbcp, t8, p8, qv8, qc8, qi8, dummy, gdzbcp, cpbr, &
                              es1, alphaw, pbarmb
       REAL (KIND=dbl_kind) :: T(NK3),H(NK3),TV(NK3),PILOG(NK3),ALPHA(NK3)  &
           ,QCBAR(NK3),QVSBAR(NK3)
       REAL (KIND=dbl_kind) :: ZT1(10000),PI1(10000),TV1(10000),PILOG1(10000)
-      REAL (KIND=dbl_kind) :: PQ1(10000),P1(10000),T1(10000),QV1(10000),QC1(10000)
+      REAL (KIND=dbl_kind) :: PQ1(10000),P1(16),T1(16),QV1(16),QC1(10000)
       REAL (KIND=dbl_kind) :: Q1OBS(10000),Q2OBS(10000),wls1(10000)
-      REAL (KIND=dbl_kind) :: PU1(10000),U1(10000),HEIGHT(10000),sfcp,DELZ,THVAVG,THV(10000)
+      REAL (KIND=dbl_kind) :: PU1(16),U1(16),V1(16),HEIGHT(10000),sfcp,DELZ,THVAVG,THV(10000)
 
+
+!************************************
+!* BJT  (2016.07.20 ) case    *
+!************************************
+!      program input_EHTW
+!      implicit none
+!      include 'netcdf.inc'
+
+      character*(*) FILE_NAME
+      parameter (FILE_NAME='/work/j40bjt00/pn1od10d10d1dTM.T106O1Z60.10.606.ehtw_2015.1104-1108.nc')
+
+      character(23) FILENAME
+
+!      integer NX, NY
+!      parameter (NX = 1024, NY = 1024)
+!      REAL*8 data(NX,NY),lon(NX),lat(NY),XM(NX),YM(NY)
+!      integer NX,ti
+!      parameter (NX = 16, ti=1)
+
+!      real*8  v(ti,NX),u1(ti,NX),t1(ti,NX),qv1(ti, NX),p1(NX)
+      integer ncid, nvarid
+      integer ierr
+
+
+! IMPORT topography date
+
+      ierr = nf_open(FILE_NAME, NF_NOWRITE, ncid)
+      ierr = nf_inq_varid(ncid, 'lev', nvarid)
+      ierr = nf_get_var_double(ncid,nvarid,p1)
+!!      ierr = nf_inq_varid(ncid, 'lev_2', nvarid)
+!!      ierr = nf_get_var_double(ncid,nvarid,lev_2)
+      ierr = nf_inq_varid(ncid, 'q', nvarid)
+      ierr = nf_get_var_double(ncid, nvarid, qv1)
+      ierr = nf_inq_varid(ncid, 'st', nvarid)
+      ierr = nf_get_var_double(ncid, nvarid, t1)
+      ierr = nf_inq_varid(ncid, 'u', nvarid)
+      ierr = nf_get_var_double(ncid, nvarid, u1)
+      ierr = nf_inq_varid(ncid, 'v', nvarid)
+      ierr = nf_get_var_double(ncid, nvarid, v1)
+      ierr = nf_close(ncid)
+
+      PU1 = P1
+
+
+!-----------------------------------------------------
        DELZ=1.
        sfcp=1000.
        DO K=1,NT1
        HEIGHT(K)=(K-1)*DELZ
        ENDDO
 
-!************************************
-!* Puli  (2013.09.08 14) case    *
-!************************************
-
-        t1=0.
-        qv1=0.
-        qc1=0.
-        wls1=0.
-
-        do k=1,NT1
-        if(height(k) .lt. 1500.) then
-        t1(k) =298.5+(305.5-298.5)*height(k)/1500.
-        qv1(k)=15.7
-        elseif(height(k) .ge. 1500. .and. height(k) .le. 2275.) then
-        qv1(k)=15.7 -(15.7-12.7) *(height(k)-1500.)/775.
-        t1(k) =305.5+(309.-305.5)*(height(k)-1500.)/775.
-        else
-        qv1(k)=7.4 -(7.4-1.15) *(height(k)-2275.)/4100.
-        t1(k) =315.+(327.-315.)*(height(k)-2775.)/4100.
-        endif
-
-        if(qv1(k) .lt. 0.) then
-        qv1(k)=0.
-        endif
-
-        enddo
-
-    
-        do k=2,NT1
-        if(height(k) .le. 2275.) then
-        wls1(k)=1.5*(height(k)/2275.)
-        else
-        wls1(k)=1.5
-        endif
-        enddo
-
-        do k=1,NT1
-        qv1(k)=qv1(k)/1000.
-        enddo
-
-        do k=1,nt1
-        thv(k)=t1(k)*(1+0.608*qv1(k))
-        enddo
-
-
-       PI1(1)=(sfcp/1000.)**(rgas/CP)
-       DO K=2,NT1
-       THVAVG=0.5*(THV(K)+THV(K-1))
-       PI1(K)=PI1(K-1)-GRAV*DELZ/(CP*THVAVG)
-       ENDDO
-
-       DO K=1,nt1
-       p1(k)=exp(cp/rgas*log(pi1(K))+log(1000.))
-       PU1(K)=P1(K)
-       PQ1(K)=P1(K)
-       ENDDO
-
-       do k=1,nt1
-       t1(k)=t1(k)*pi1(k)
-       enddo
+!---------------------------------------------------------------------------
 
       casename= 'GATE_PHASE_III'
 
@@ -364,10 +351,14 @@ CONTAINS
       K1 = INDEXR(PBARMB,NU1,PU1,LF)
       K2 = K1 + 1
       UG(K) = FINTRP(1,PBARMB,PU1(K1),U1(K1),PU1(K2),U1(K2))
+      VG(K) = FINTRP(1,PBARMB,PU1(K1),V1(K1),PU1(K2),V1(K2))
+
   220 CONTINUE 
       UG(1)   = UG(2)
       UG(NK3) = UG(NK2)
-      vG(:)   = 0.
+      VG(1)   = VG(2)
+      VG(NK3) = VG(NK2)
+!      vG(:)   = 0.
 
 !     OCEAN POINTS
 
@@ -482,8 +473,8 @@ CONTAINS
       DO 610 I = mim,mip
       Z3DZ(I,J,K)=0.
 !ccwu_ini_wind 
-      U3DX(I,J,K)=-2.
-      U3DY(I,J,K)=-1.
+      U3DX(I,J,K)=UG(K)
+      U3DY(I,J,K)=VG(K)
   610 CONTINUE
 
       DO 660 K = 2, NK1
